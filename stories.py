@@ -196,21 +196,25 @@ def write_story(model_name):
     Generate a single captivating title for your story based on the premise:
     {premise}
     
-    Title format:
-    <title>
+    Provide the title in the following format:
+    Title: <title>
     """
     title_text = generate_with_retry(model, title_prompt).text.strip()
     print("Generated Title:")
     print(title_text)
 
     # Extract the title from the generated text
-    title_matches = re.findall(r"<title>(.*?)</title>", title_text, re.DOTALL)
-    if title_matches:
-        # Use the first title if multiple titles are provided
-        title = title_matches[0].strip()
+    title_match = re.search(r"Title: (.*)", title_text, re.IGNORECASE)
+    if title_match:
+        title = title_match.group(1).strip()
     else:
-        # Fallback to a default title if no titles are found
-        title = "Untitled"
+        # Fallback to extracting the first line as the title
+        lines = title_text.split("\n")
+        if lines:
+            title = lines[0].strip()
+        else:
+            # Fallback to a default title if no title is found
+            title = "Untitled"
 
     starting_prompt = f"""
     {persona}
