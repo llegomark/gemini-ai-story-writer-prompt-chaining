@@ -191,13 +191,26 @@ def write_story(model_name):
     print(outline)
 
     # Generate and save title
-    title_prompt = f"{persona} Generate a captivating title for your story based on the premise: {premise}"
+    title_prompt = f"""
+    {persona}
+    Generate a single captivating title for your story based on the premise:
+    {premise}
+    
+    Title format:
+    <title>
+    """
     title_text = generate_with_retry(model, title_prompt).text.strip()
     print("Generated Title:")
     print(title_text)
 
-    # Extract the first title suggestion (assuming it's the best)
-    title = title_text.split("\n")[0]  # Get the first line
+    # Extract the title from the generated text
+    title_matches = re.findall(r"<title>(.*?)</title>", title_text, re.DOTALL)
+    if title_matches:
+        # Use the first title if multiple titles are provided
+        title = title_matches[0].strip()
+    else:
+        # Fallback to a default title if no titles are found
+        title = "Untitled"
 
     starting_prompt = f"""
     {persona}
@@ -305,7 +318,10 @@ def write_story(model_name):
     # Sanitize title for filename
     def sanitize_title(title):
         # Replace invalid characters with underscores
-        return re.sub(r"[^\w\-_\. ]", "_", title)
+        sanitized_title = re.sub(r"[^\w\-_\. ]", "_", title)
+        # Limit the title length to a maximum of 100 characters
+        sanitized_title = sanitized_title[:100]
+        return sanitized_title
 
     # Save final story with sanitized title
     final_filename = f"{story_dir}/{sanitize_title(title)}.txt"
