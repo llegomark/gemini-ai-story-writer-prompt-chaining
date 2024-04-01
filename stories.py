@@ -42,11 +42,18 @@ MODELS = {
 def generate_with_retry(model, prompt):
     try:
         return model.generate_content(prompt)
-    except exceptions.InvalidArgumentError as e:
+    except exceptions.InvalidArgument as e:
         raise ValueError(f"Invalid input provided: {e}")
-
+    except exceptions.DeadlineExceeded as e:
+        raise exceptions.DeadlineExceeded(
+            f"Deadline exceeded while generating content: {e}")
+    except exceptions.ResourceExhausted as e:
+        raise exceptions.ResourceExhausted(
+            f"Resource exhausted (quota limit reached): {e}")
 
 # Prompts
+
+
 def get_persona():
     print("Persona Options:")
     print("1. Award-winning science fiction author")
@@ -55,7 +62,6 @@ def get_persona():
     print("4. Custom persona")
     choice = input(
         "Enter the number corresponding to your desired persona (1-4): ")
-
     if choice == "1":
         return """
         You are an award-winning science fiction author with a penchant for expansive,
@@ -92,7 +98,6 @@ def get_writing_guidelines():
     print("4. Custom guidelines")
     choice = input(
         "Enter the number corresponding to your desired writing guidelines (1-4): ")
-
     if choice == "1":
         return """
         Writing Guidelines:
@@ -171,7 +176,6 @@ def write_story(model_name):
     {persona}
     Write a single sentence premise for a sci-fi story featuring cats.
     """
-
     premise = generate_with_retry(model, premise_prompt).text
     print("Generated Premise:")
     print(premise)
@@ -182,7 +186,6 @@ def write_story(model_name):
     {premise}
     Write an outline for the plot of your story.
     """
-
     outline = generate_with_retry(model, outline_prompt).text
     print("Generated Outline:")
     print(outline)
@@ -256,10 +259,12 @@ def write_story(model_name):
     print(continuation)
 
     draft = draft + "\n\n" + continuation
+
     query_count = 1
 
     # Maximum iteration limit to prevent infinite loop
     max_iterations = 20
+
     for i in range(max_iterations):
         if "IAMDONE" in continuation:
             break
@@ -267,6 +272,7 @@ def write_story(model_name):
         if rate_limit:
             if query_count % rate_limit[0] == 0:
                 time.sleep(rate_limit[1])
+
         if daily_limit and query_count >= daily_limit:
             print("Daily query limit reached. Please try again tomorrow.")
             break
@@ -274,14 +280,14 @@ def write_story(model_name):
         try:
             continuation = extract_text(generate_with_retry(
                 model, continuation_prompt.format(story_summary=draft)))
-        except exceptions.InvalidArgument as e:  # Corrected exception handling
+        except exceptions.InvalidArgument as e:
             print(f"Invalid input provided: {e}")
-            break  # Exit the loop if invalid input is encountered
-        except exceptions.DeadlineExceeded:  # Handle deadline exceeded errors
-            print("Deadline exceeded while generating content. Please try again.")
             break
-        except exceptions.ResourceExhausted:  # Handle resource exhaustion errors
-            print("Resource exhausted (quota limit reached). Please try again later.")
+        except exceptions.DeadlineExceeded as e:
+            print(f"Deadline exceeded while generating content: {e}")
+            break
+        except exceptions.ResourceExhausted as e:
+            print(f"Resource exhausted (quota limit reached): {e}")
             break
 
         # Save each continuation
@@ -305,6 +311,7 @@ def write_story(model_name):
     final_filename = f"{story_dir}/{sanitize_title(title)}.txt"
     with open(final_filename, "w", encoding="utf-8") as file:
         file.write(final)
+
     print(f"Final story saved to {final_filename}")
 
 
