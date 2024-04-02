@@ -162,6 +162,16 @@ def get_writing_guidelines():
 def get_user_input(prompt):
     return input(prompt)
 
+# Sanitize title for filename
+
+
+def sanitize_title(title):
+    # Replace invalid characters with underscores
+    sanitized_title = re.sub(r"[^\w\-_\. ]", "_", title)
+    # Limit the title length to a maximum of 100 characters
+    sanitized_title = sanitized_title[:100]
+    return sanitized_title
+
 
 def write_story(model_name):
     model_config = MODELS[model_name]
@@ -278,18 +288,15 @@ def write_story(model_name):
     draft = draft + "\n\n" + continuation
 
     query_count = 1
-
     # Maximum iteration limit to prevent infinite loop
     max_iterations = 20
 
     for i in range(max_iterations):
         if "IAMDONE" in continuation:
             break
-
         if rate_limit:
             if query_count % rate_limit[0] == 0:
                 time.sleep(rate_limit[1])
-
         if daily_limit and query_count >= daily_limit:
             print("Daily query limit reached. Please try again tomorrow.")
             break
@@ -319,19 +326,10 @@ def write_story(model_name):
     print("Final Story:")
     print(final)
 
-    # Sanitize title for filename
-    def sanitize_title(title):
-        # Replace invalid characters with underscores
-        sanitized_title = re.sub(r"[^\w\-_\. ]", "_", title)
-        # Limit the title length to a maximum of 100 characters
-        sanitized_title = sanitized_title[:100]
-        return sanitized_title
-
     # Save final story with sanitized title
     final_filename = f"{story_dir}/{sanitize_title(title)}.txt"
     with open(final_filename, "w", encoding="utf-8") as file:
         file.write(final)
-
     print(f"Final story saved to {final_filename}")
 
 
