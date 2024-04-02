@@ -288,15 +288,18 @@ def write_story(model_name):
     draft = draft + "\n\n" + continuation
 
     query_count = 1
+
     # Maximum iteration limit to prevent infinite loop
     max_iterations = 20
 
     for i in range(max_iterations):
         if "IAMDONE" in continuation:
             break
+
         if rate_limit:
             if query_count % rate_limit[0] == 0:
                 time.sleep(rate_limit[1])
+
         if daily_limit and query_count >= daily_limit:
             print("Daily query limit reached. Please try again tomorrow.")
             break
@@ -330,7 +333,17 @@ def write_story(model_name):
     final_filename = f"{story_dir}/{sanitize_title(title)}.txt"
     with open(final_filename, "w", encoding="utf-8") as file:
         file.write(final)
+
     print(f"Final story saved to {final_filename}")
+
+    # Save premise, outline, and title in a separate file
+    metadata_filename = f"{story_dir}/metadata.txt"
+    with open(metadata_filename, "w", encoding="utf-8") as file:
+        file.write(f"Generated Premise:\n{premise}\n\n")
+        file.write(f"Generated Outline:\n{outline}\n\n")
+        file.write(f"Generated Title:\n{title_text}\n")
+
+    print(f"Premise, outline, and title saved to {metadata_filename}")
 
 
 # Prompt the user to choose a model
@@ -347,6 +360,18 @@ while True:
             break
         else:
             print("Invalid choice. Please enter a valid number.")
+    except ValueError:
+        print("Invalid input. Please enter a valid number.")
+
+# Prompt the user for desired story length
+while True:
+    try:
+        desired_length = int(
+            input("Enter the desired story length in words (e.g., 1000, 2000, etc.): "))
+        if desired_length > 0:
+            break
+        else:
+            print("Invalid input. Please enter a positive integer.")
     except ValueError:
         print("Invalid input. Please enter a valid number.")
 
